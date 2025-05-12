@@ -24,3 +24,8 @@ Thumbs.db
 *.pem
 *.crx
 *.zip
+
+# Rollup
+.rpt2_cache/
+.rts2_cache*/
+.rollup.cache/

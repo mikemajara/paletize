@@ -8,14 +8,53 @@
   <body>
     <div class="container">
       <h1>Paletize</h1>
+      <div class="actions-bar">
+        <div class="action-group">
+          <button
+            id="toggle-grouping"
+            class="action-button"
+            title="Toggle between grouped and ungrouped colors"
+          >
+            Toggle Grouping
+          </button>
+        </div>
+        <div class="action-group">
+          <button
+            id="copy-all"
+            class="action-button"
+            title="Copy all colors in current format"
+          >
+            Copy All
+          </button>
+          <button
+            id="export-hex"
+            class="action-button"
+            title="Export all colors as HEX"
+          >
+            HEX
+          </button>
+          <button
+            id="export-rgb"
+            class="action-button"
+            title="Export all colors as RGB"
+          >
+            RGB
+          </button>
+          <button
+            id="export-hsl"
+            class="action-button"
+            title="Export all colors as HSL"
+          >
+            HSL
+          </button>
+        </div>
+        <div id="copy-message" class="copy-message">Copied!</div>
+      </div>
+
       <div id="loading">Extracting colors...</div>
       <div id="colors-container" class="colors-container"></div>
       <div id="no-colors" style="display: none">
         No colors found on this page.
-      </div>
-      <div class="footer">
-        <button id="copy-all">Copy All Colors</button>
-        <div id="copy-message" class="copy-message">Colors copied!</div>
       </div>
     </div>
     <script src="popup.js"></script>

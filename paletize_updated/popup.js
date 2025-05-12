@@ -3,14 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingElement = document.getElementById("loading");
   const noColorsElement = document.getElementById("no-colors");
   const copyAllButton = document.getElementById("copy-all");
-  const exportHexButton = document.getElementById("export-hex");
-  const exportRgbButton = document.getElementById("export-rgb");
-  const exportHslButton = document.getElementById("export-hsl");
-  const toggleGroupingButton = document.getElementById("toggle-grouping");
   const copyMessage = document.getElementById("copy-message");
 
   let colors = [];
-  let isGrouped = true; // Default to grouped colors
 
   // Function to convert RGB to HEX
   function rgbToHex(rgb) {
@@ -78,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const r = parseInt(rgbMatch[1], 10) / 255;
     const g = parseInt(rgbMatch[2], 10) / 255;
     const b = parseInt(rgbMatch[3], 10) / 255;
-    const a = rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1;
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
@@ -107,65 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
       h /= 6;
     }
 
-    return { h: h * 360, s: s * 100, l: l * 100, a };
-  }
-
-  // Convert any color to RGB object
-  function colorToRgb(color) {
-    const tempEl = document.createElement("div");
-    tempEl.style.color = color;
-    document.body.appendChild(tempEl);
-
-    const computedColor = getComputedStyle(tempEl).color;
-    document.body.removeChild(tempEl);
-
-    // Extract RGB values
-    const rgbMatch =
-      computedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/) ||
-      computedColor.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([0-9.]+)\)/);
-
-    if (!rgbMatch) return { r: 0, g: 0, b: 0, a: 1 };
-
-    return {
-      r: parseInt(rgbMatch[1], 10),
-      g: parseInt(rgbMatch[2], 10),
-      b: parseInt(rgbMatch[3], 10),
-      a: rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1,
-    };
-  }
-
-  // Format color as HEX
-  function formatAsHex(color) {
-    // If already HEX, return as is
-    if (color.startsWith("#")) return color;
-    return rgbToHex(color);
-  }
-
-  // Format color as RGB/RGBA
-  function formatAsRgb(color) {
-    // If already RGB/RGBA, return as is
-    if (color.startsWith("rgb")) return color;
-
-    const rgb = colorToRgb(color);
-    if (rgb.a < 1) {
-      return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${rgb.a.toFixed(2)})`;
-    } else {
-      return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-    }
-  }
-
-  // Format color as HSL/HSLA
-  function formatAsHsl(color) {
-    const hsl = colorToHsl(color);
-    if (hsl.a < 1) {
-      return `hsla(${Math.round(hsl.h)}, ${Math.round(hsl.s)}%, ${Math.round(
-        hsl.l
-      )}%, ${hsl.a.toFixed(2)})`;
-    } else {
-      return `hsl(${Math.round(hsl.h)}, ${Math.round(hsl.s)}%, ${Math.round(
-        hsl.l
-      )}%)`;
-    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
   }
 
   // Group colors into palettes
@@ -212,90 +148,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return palettes;
   }
 
-  // Display colors in a simple list (not grouped)
-  function displaySimpleList(colors) {
-    colorsContainer.innerHTML = "";
-
-    // Convert colors to objects with HSL values for sorting
-    const colorObjects = colors.map((color) => ({
-      value: color,
-      hsl: colorToHsl(color),
-    }));
-
-    // Sort by hue, then lightness
-    colorObjects.sort((a, b) => {
-      if (Math.abs(a.hsl.h - b.hsl.h) > 10) {
-        return a.hsl.h - b.hsl.h;
-      }
-      return a.hsl.l - b.hsl.l;
-    });
-
-    // Create a single container for all colors
-    const container = document.createElement("div");
-    container.className = "palette-container";
-
-    // Add all colors to the container
-    colorObjects.forEach((colorObj) => {
-      const color = colorObj.value;
-      const colorItem = createColorItem(color);
-      container.appendChild(colorItem);
-    });
-
-    colorsContainer.appendChild(container);
-  }
-
-  // Create a color item element
-  function createColorItem(color) {
-    const colorItem = document.createElement("div");
-    colorItem.className = "color-item";
-
-    const colorBox = document.createElement("div");
-    colorBox.className = "color-box";
-    colorBox.style.backgroundColor = color;
-
-    const colorValue = document.createElement("div");
-    colorValue.className = "color-value";
-    colorValue.textContent = color;
-
-    // Set text color based on background color
-    const isLight = isLightColor(color);
-    colorValue.style.color = isLight ? "#333" : "#fff";
-
-    // If the color is semi-transparent, add a light background to the text
-    if (
-      color.startsWith("rgba") &&
-      !color.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[01](\.0*)?\s*\)/)
-    ) {
-      colorValue.style.backgroundColor = isLight
-        ? "rgba(0, 0, 0, 0.1)"
-        : "rgba(255, 255, 255, 0.2)";
-    }
-
-    // Place the color value inside the color box
-    colorBox.appendChild(colorValue);
-    colorItem.appendChild(colorBox);
-
-    // Copy color value when clicked
-    colorItem.addEventListener("click", () => {
-      navigator.clipboard.writeText(color).then(() => {
-        const originalText = colorValue.textContent;
-        colorValue.textContent = "Copied!";
-        setTimeout(() => {
-          colorValue.textContent = originalText;
-        }, 1000);
-      });
-    });
-
-    return colorItem;
-  }
-
-  // Display extracted colors grouped in palettes
-  function displayGroupedColors(colors) {
+  // Display extracted colors
+  function displayColors(colors) {
     colorsContainer.innerHTML = "";
 
     if (colors.length === 0) {
+      loadingElement.style.display = "none";
+      noColorsElement.style.display = "block";
       return;
     }
+
+    loadingElement.style.display = "none";
 
     // Group colors into palettes
     const palettes = groupColorsIntoPalettes(colors);
@@ -308,7 +171,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Create color items within this palette
       palette.forEach((colorObj) => {
-        const colorItem = createColorItem(colorObj.value);
+        const color = colorObj.value;
+        const colorItem = document.createElement("div");
+        colorItem.className = "color-item";
+
+        const colorBox = document.createElement("div");
+        colorBox.className = "color-box";
+        colorBox.style.backgroundColor = color;
+
+        const colorValue = document.createElement("div");
+        colorValue.className = "color-value";
+        colorValue.textContent = color;
+
+        // Set text color based on background color
+        const isLight = isLightColor(color);
+        if (
+          color.startsWith("rgba") &&
+          !color.match(
+            /rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[01](\.0*)?\s*\)/
+          )
+        ) {
+          colorValue.style.color = "#333";
+        } else {
+          colorValue.style.color = isLight ? "#333" : "#fff";
+        }
+
+        colorItem.appendChild(colorBox);
+        colorItem.appendChild(colorValue);
+
+        // Copy color value when clicked
+        colorItem.addEventListener("click", () => {
+          navigator.clipboard.writeText(color).then(() => {
+            colorValue.textContent = "Copied!";
+            setTimeout(() => {
+              colorValue.textContent = color;
+            }, 1000);
+          });
+        });
+
         paletteContainer.appendChild(colorItem);
       });
 
@@ -321,33 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       colorsContainer.appendChild(paletteContainer);
     });
-  }
-
-  // Display colors based on grouping setting
-  function displayColors(colors) {
-    if (colors.length === 0) {
-      loadingElement.style.display = "none";
-      noColorsElement.style.display = "block";
-      return;
-    }
-
-    loadingElement.style.display = "none";
-    noColorsElement.style.display = "none";
-
-    if (isGrouped) {
-      displayGroupedColors(colors);
-    } else {
-      displaySimpleList(colors);
-    }
-  }
-
-  // Show message in the copy message div
-  function showCopyMessage(text = "Copied!") {
-    copyMessage.textContent = text;
-    copyMessage.style.display = "block";
-    setTimeout(() => {
-      copyMessage.style.display = "none";
-    }, 2000);
   }
 
   // Extract colors from the current tab
@@ -389,52 +262,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Toggle between grouped and ungrouped color display
-  toggleGroupingButton.addEventListener("click", () => {
-    isGrouped = !isGrouped;
-    toggleGroupingButton.textContent = isGrouped
-      ? "Disable Grouping"
-      : "Enable Grouping";
-    displayColors(colors);
-  });
-
   // Copy all colors to clipboard
   copyAllButton.addEventListener("click", () => {
     if (colors.length === 0) return;
 
     const colorText = colors.join("\n");
     navigator.clipboard.writeText(colorText).then(() => {
-      showCopyMessage("Colors copied!");
-    });
-  });
-
-  // Export colors as HEX
-  exportHexButton.addEventListener("click", () => {
-    if (colors.length === 0) return;
-
-    const hexColors = colors.map(formatAsHex);
-    navigator.clipboard.writeText(hexColors.join("\n")).then(() => {
-      showCopyMessage("HEX colors copied!");
-    });
-  });
-
-  // Export colors as RGB
-  exportRgbButton.addEventListener("click", () => {
-    if (colors.length === 0) return;
-
-    const rgbColors = colors.map(formatAsRgb);
-    navigator.clipboard.writeText(rgbColors.join("\n")).then(() => {
-      showCopyMessage("RGB colors copied!");
-    });
-  });
-
-  // Export colors as HSL
-  exportHslButton.addEventListener("click", () => {
-    if (colors.length === 0) return;
-
-    const hslColors = colors.map(formatAsHsl);
-    navigator.clipboard.writeText(hslColors.join("\n")).then(() => {
-      showCopyMessage("HSL colors copied!");
+      copyMessage.style.display = "block";
+      setTimeout(() => {
+        copyMessage.style.display = "none";
+      }, 2000);
     });
   });
 

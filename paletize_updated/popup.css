@@ -19,10 +19,26 @@ h1 {
 }
 
 .colors-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.palette-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  margin-bottom: 16px;
+  padding-bottom: 12px;
+  position: relative;
+}
+
+.palette-separator {
+  grid-column: 1 / -1;
+  height: 1px;
+  background-color: #ddd;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
 .color-item {
