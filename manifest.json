@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Paletize 🎨",
+  "version": "1.0",
+  "description": "Extract and display all colors used on a website",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": ["activeTab", "scripting"]
+}

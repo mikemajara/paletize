@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Paletize</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Paletize</h1>
+      <div id="loading">Extracting colors...</div>
+      <div id="colors-container" class="colors-container"></div>
+      <div id="no-colors" style="display: none">
+        No colors found on this page.
+      </div>
+      <div class="footer">
+        <button id="copy-all">Copy All Colors</button>
+        <div id="copy-message" class="copy-message">Colors copied!</div>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
