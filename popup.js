@@ -3,14 +3,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingElement = document.getElementById("loading");
   const noColorsElement = document.getElementById("no-colors");
   const copyAllButton = document.getElementById("copy-all");
-  const exportHexButton = document.getElementById("export-hex");
-  const exportRgbButton = document.getElementById("export-rgb");
-  const exportHslButton = document.getElementById("export-hsl");
-  const toggleGroupingButton = document.getElementById("toggle-grouping");
   const copyMessage = document.getElementById("copy-message");
+  const tabButtons = document.querySelectorAll(".tab-button");
+  const proximitySlider = document.getElementById("proximity-slider");
+  const thresholdValueDisplay = document.getElementById("threshold-value");
+  const swatchToggle = document.getElementById("swatch-switch");
 
   let colors = [];
-  let isGrouped = true; // Default to grouped colors
+  let currentFormat = "hex"; // Default format
+  let proximityThreshold = parseInt(proximitySlider.value); // Default threshold
+  let showSwatches = true; // Default to showing swatches
+
+  // Show current threshold value
+  thresholdValueDisplay.textContent = proximityThreshold;
 
   // Function to convert RGB to HEX
   function rgbToHex(rgb) {
@@ -168,6 +173,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Format color based on current selected format
+  function formatColorByCurrentFormat(color) {
+    switch (currentFormat) {
+      case "hex":
+        return formatAsHex(color);
+      case "rgb":
+        return formatAsRgb(color);
+      case "hsl":
+        return formatAsHsl(color);
+      default:
+        return color;
+    }
+  }
+
   // Group colors into palettes
   function groupColorsIntoPalettes(colors) {
     // Convert colors to objects with HSL values
@@ -199,15 +218,10 @@ document.addEventListener("DOMContentLoaded", () => {
       prevHue = color.hsl.h;
     }
 
-    // Add the last palette if not empty
+    // Add the last palette
     if (currentPalette.length > 0) {
       palettes.push(currentPalette);
     }
-
-    // Sort colors within each palette by lightness
-    palettes.forEach((palette) => {
-      palette.sort((a, b) => a.hsl.l - b.hsl.l);
-    });
 
     return palettes;
   }
@@ -244,10 +258,104 @@ document.addEventListener("DOMContentLoaded", () => {
     colorsContainer.appendChild(container);
   }
 
+  // Generate color swatch with variations from 50 to 900
+  function generateColorSwatch(baseColor) {
+    // Convert to RGB for easier manipulation
+    const rgb = colorToRgb(baseColor);
+    const hsl = colorToHsl(baseColor);
+
+    // Create variants container
+    const swatchContainer = document.createElement("div");
+    swatchContainer.className = "swatch-container";
+
+    // Define shade levels
+    const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+
+    // Generate shades by adjusting lightness
+    shades.forEach((shade) => {
+      // Calculate lightness based on shade
+      // 500 is the base shade, lower numbers are lighter, higher are darker
+      let newLightness;
+      if (shade < 500) {
+        // Lighter shades - interpolate from base to 95%
+        newLightness = hsl.l + ((95 - hsl.l) * (500 - shade)) / 450;
+      } else {
+        // Darker shades - interpolate from base to 15%
+        newLightness = hsl.l - ((hsl.l - 15) * (shade - 500)) / 400;
+      }
+
+      // Ensure lightness is in 0-100 range
+      newLightness = Math.max(5, Math.min(98, newLightness));
+
+      // Also adjust saturation slightly (more saturation for middle tones)
+      let newSaturation = hsl.s;
+      if (shade !== 500) {
+        // Increase saturation for middle tones (300-700)
+        if (shade >= 300 && shade <= 700) {
+          newSaturation = Math.min(100, hsl.s * 1.1);
+        } else {
+          // Decrease saturation for extreme tones
+          newSaturation = Math.max(0, hsl.s * 0.9);
+        }
+      }
+
+      // Create shade element
+      const shadeEl = document.createElement("div");
+      shadeEl.className = "color-shade";
+
+      // Mark the base color (or closest to it)
+      if (shade === 500) {
+        shadeEl.classList.add("base-shade");
+      }
+
+      shadeEl.style.backgroundColor = `hsl(${Math.round(hsl.h)}, ${Math.round(
+        newSaturation
+      )}%, ${Math.round(newLightness)}%)`;
+
+      // Add color code
+      const shadeHex = formatAsHex(
+        `hsl(${Math.round(hsl.h)}, ${Math.round(newSaturation)}%, ${Math.round(
+          newLightness
+        )}%)`
+      );
+
+      // Add data attributes
+      shadeEl.dataset.shade = shade;
+      shadeEl.dataset.color = shadeHex;
+
+      // Add label with shade level
+      const label = document.createElement("div");
+      label.className = "shade-label";
+      label.textContent = shade;
+      label.style.color = newLightness > 60 ? "#333" : "#fff";
+
+      // Add hex code (hidden by default, shown on hover)
+      const hexCode = document.createElement("div");
+      hexCode.className = "shade-hex";
+      hexCode.textContent = shadeHex;
+
+      shadeEl.appendChild(label);
+      shadeEl.appendChild(hexCode);
+
+      // Add click event to copy the color
+      shadeEl.addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent triggering parent's click event
+        navigator.clipboard.writeText(shadeHex).then(() => {
+          showCopyMessage(`${shadeHex} copied!`);
+        });
+      });
+
+      swatchContainer.appendChild(shadeEl);
+    });
+
+    return swatchContainer;
+  }
+
   // Create a color item element
   function createColorItem(color) {
     const colorItem = document.createElement("div");
     colorItem.className = "color-item";
+    colorItem.dataset.originalColor = color; // Store original color value
 
     const colorBox = document.createElement("div");
     colorBox.className = "color-box";
@@ -255,7 +363,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const colorValue = document.createElement("div");
     colorValue.className = "color-value";
-    colorValue.textContent = color;
+
+    // Display the color in the currently selected format
+    const formattedColor = formatColorByCurrentFormat(color);
+    colorValue.textContent = formattedColor;
 
     // Set text color based on background color
     const isLight = isLightColor(color);
@@ -275,9 +386,16 @@ document.addEventListener("DOMContentLoaded", () => {
     colorBox.appendChild(colorValue);
     colorItem.appendChild(colorBox);
 
+    // Add swatch if enabled
+    if (showSwatches) {
+      const swatch = generateColorSwatch(color);
+      colorItem.appendChild(swatch);
+    }
+
     // Copy color value when clicked
     colorItem.addEventListener("click", () => {
-      navigator.clipboard.writeText(color).then(() => {
+      // Copy the formatted color value
+      navigator.clipboard.writeText(formattedColor).then(() => {
         const originalText = colorValue.textContent;
         colorValue.textContent = "Copied!";
         setTimeout(() => {
@@ -323,7 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Display colors based on grouping setting
+  // Display colors (always grouped now)
   function displayColors(colors) {
     if (colors.length === 0) {
       loadingElement.style.display = "none";
@@ -334,19 +452,22 @@ document.addEventListener("DOMContentLoaded", () => {
     loadingElement.style.display = "none";
     noColorsElement.style.display = "none";
 
-    if (isGrouped) {
-      displayGroupedColors(colors);
-    } else {
-      displaySimpleList(colors);
-    }
+    // Always use grouped display now
+    displayGroupedColors(colors);
+  }
+
+  // Update color display when format changes
+  function updateColorDisplay() {
+    // Redisplay colors with the new format
+    displayColors(colors);
   }
 
   // Show message in the copy message div
   function showCopyMessage(text = "Copied!") {
     copyMessage.textContent = text;
-    copyMessage.style.display = "block";
+    copyMessage.classList.add("show");
     setTimeout(() => {
-      copyMessage.style.display = "none";
+      copyMessage.classList.remove("show");
     }, 2000);
   }
 
@@ -365,7 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Now send a message to the content script
             chrome.tabs.sendMessage(
               currentTab.id,
-              { action: "extractColors" },
+              { action: "extractColors", threshold: proximityThreshold },
               (response) => {
                 if (chrome.runtime.lastError) {
                   console.error(chrome.runtime.lastError);
@@ -389,54 +510,58 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Toggle between grouped and ungrouped color display
-  toggleGroupingButton.addEventListener("click", () => {
-    isGrouped = !isGrouped;
-    toggleGroupingButton.textContent = isGrouped
-      ? "Disable Grouping"
-      : "Enable Grouping";
-    displayColors(colors);
+  // Handle tab button clicks
+  tabButtons.forEach((tabButton) => {
+    tabButton.addEventListener("click", () => {
+      // Update active tab styling
+      tabButtons.forEach((btn) => btn.classList.remove("active"));
+      tabButton.classList.add("active");
+
+      // Set current format
+      currentFormat = tabButton.dataset.format;
+
+      // Update color display
+      updateColorDisplay();
+    });
   });
 
-  // Copy all colors to clipboard
+  // Handle proximity slider changes
+  proximitySlider.addEventListener("input", () => {
+    // Update the displayed value
+    proximityThreshold = parseInt(proximitySlider.value);
+    thresholdValueDisplay.textContent = proximityThreshold;
+  });
+
+  // Re-extract colors when the slider is released
+  proximitySlider.addEventListener("change", () => {
+    // Show loading again
+    loadingElement.style.display = "block";
+    colorsContainer.innerHTML = "";
+
+    // Extract colors with new threshold
+    extractColorsFromCurrentTab();
+  });
+
+  // Copy all colors to clipboard in the selected format
   copyAllButton.addEventListener("click", () => {
     if (colors.length === 0) return;
 
-    const colorText = colors.join("\n");
-    navigator.clipboard.writeText(colorText).then(() => {
-      showCopyMessage("Colors copied!");
+    // Format all colors based on current format
+    const formattedColors = colors.map(formatColorByCurrentFormat);
+    navigator.clipboard.writeText(formattedColors.join("\n")).then(() => {
+      showCopyMessage(`Colors copied as ${currentFormat.toUpperCase()}!`);
     });
   });
 
-  // Export colors as HEX
-  exportHexButton.addEventListener("click", () => {
-    if (colors.length === 0) return;
-
-    const hexColors = colors.map(formatAsHex);
-    navigator.clipboard.writeText(hexColors.join("\n")).then(() => {
-      showCopyMessage("HEX colors copied!");
-    });
+  // Handle swatch toggle switch changes
+  swatchToggle.addEventListener("change", () => {
+    showSwatches = swatchToggle.checked;
+    // Refresh display to show/hide swatches
+    updateColorDisplay();
   });
 
-  // Export colors as RGB
-  exportRgbButton.addEventListener("click", () => {
-    if (colors.length === 0) return;
-
-    const rgbColors = colors.map(formatAsRgb);
-    navigator.clipboard.writeText(rgbColors.join("\n")).then(() => {
-      showCopyMessage("RGB colors copied!");
-    });
-  });
-
-  // Export colors as HSL
-  exportHslButton.addEventListener("click", () => {
-    if (colors.length === 0) return;
-
-    const hslColors = colors.map(formatAsHsl);
-    navigator.clipboard.writeText(hslColors.join("\n")).then(() => {
-      showCopyMessage("HSL colors copied!");
-    });
-  });
+  // Initialize the toggle state based on the default value
+  swatchToggle.checked = showSwatches;
 
   // Start the extraction process
   extractColorsFromCurrentTab();

@@ -7,48 +7,51 @@
   </head>
   <body>
     <div class="container">
-      <h1>Paletize</h1>
-      <div class="actions-bar">
-        <div class="action-group">
-          <button
-            id="toggle-grouping"
-            class="action-button"
-            title="Toggle between grouped and ungrouped colors"
-          >
-            Toggle Grouping
-          </button>
-        </div>
-        <div class="action-group">
+      <div class="header">
+        <h1>Paletize</h1>
+
+        <div class="controls-container">
+          <div class="tabs-container">
+            <button id="tab-hex" class="tab-button active" data-format="hex">
+              HEX
+            </button>
+            <button id="tab-rgb" class="tab-button" data-format="rgb">
+              RGB
+            </button>
+            <button id="tab-hsl" class="tab-button" data-format="hsl">
+              HSL
+            </button>
+          </div>
+
           <button
             id="copy-all"
-            class="action-button"
+            class="copy-button"
             title="Copy all colors in current format"
           >
-            Copy All
-          </button>
-          <button
-            id="export-hex"
-            class="action-button"
-            title="Export all colors as HEX"
-          >
-            HEX
-          </button>
-          <button
-            id="export-rgb"
-            class="action-button"
-            title="Export all colors as RGB"
-          >
-            RGB
-          </button>
-          <button
-            id="export-hsl"
-            class="action-button"
-            title="Export all colors as HSL"
-          >
-            HSL
+            <div class="copy-icon"></div>
           </button>
         </div>
-        <div id="copy-message" class="copy-message">Copied!</div>
+
+        <div class="proximity-control">
+          <label for="proximity-slider">Proximity</label>
+          <input
+            type="range"
+            id="proximity-slider"
+            min="2"
+            max="30"
+            value="10"
+            title="Adjust to filter out similar colors (higher values mean fewer colors)"
+          />
+          <span id="threshold-value" class="hidden">10</span>
+        </div>
+
+        <div class="swatch-toggle">
+          <label for="swatch-switch">Swatch</label>
+          <div class="switch">
+            <input type="checkbox" id="swatch-switch" checked />
+            <span class="slider round"></span>
+          </div>
+        </div>
       </div>
 
       <div id="loading">Extracting colors...</div>
@@ -56,6 +59,8 @@
       <div id="no-colors" style="display: none">
         No colors found on this page.
       </div>
+
+      <div id="copy-message" class="copy-message">Copied!</div>
     </div>
     <script src="popup.js"></script>
   </body>

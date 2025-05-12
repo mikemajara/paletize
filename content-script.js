@@ -1,4 +1,4 @@
-function extractColors() {
+function extractColors(proximityThreshold = 10) {
   const colorSet = new Set();
   const colorRegex = {
     hex: /#([0-9a-f]{3}){1,2}\b/gi,
@@ -62,8 +62,8 @@ function extractColors() {
   // Convert all colors to RGB objects for processing
   const colorObjects = filteredColors.map(colorToRgb);
 
-  // Group similar colors
-  const groupedColors = groupSimilarColors(colorObjects);
+  // Group similar colors using the provided threshold
+  const groupedColors = groupSimilarColors(colorObjects, proximityThreshold);
 
   // Sort colors by HSL values
   const sortedColors = sortColorsByHsl(groupedColors);
@@ -139,17 +139,61 @@ function rgbToHsl(r, g, b) {
 
 // Calculate color difference
 function colorDistance(color1, color2) {
-  // Simple Euclidean distance in RGB space
-  const rDiff = color1.r - color2.r;
-  const gDiff = color1.g - color2.g;
-  const bDiff = color1.b - color2.b;
+  // Convert RGB to LAB color space for perceptual color difference
+  const lab1 = rgbToLab(color1.r, color1.g, color1.b);
+  const lab2 = rgbToLab(color2.r, color2.g, color2.b);
 
-  return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+  // Calculate delta E using CIEDE2000 formula (simplified version)
+  const deltaL = lab1.l - lab2.l;
+  const deltaA = lab1.a - lab2.a;
+  const deltaB = lab1.b - lab2.b;
+
+  // Weighted Euclidean distance (simplified approximation of CIEDE2000)
+  // This gives better perceptual results than simple RGB distance
+  return Math.sqrt(deltaL * deltaL + deltaA * deltaA + deltaB * deltaB);
+}
+
+// Convert RGB to LAB color space
+function rgbToLab(r, g, b) {
+  // First convert RGB to XYZ
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  // Apply gamma correction
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+  // Convert to XYZ using sRGB matrix
+  const x = r * 0.4124 + g * 0.3576 + b * 0.1805;
+  const y = r * 0.2126 + g * 0.7152 + b * 0.0722;
+  const z = r * 0.0193 + g * 0.1192 + b * 0.9505;
+
+  // Convert XYZ to LAB
+  // Reference white point
+  const xn = 0.95047;
+  const yn = 1.0;
+  const zn = 1.08883;
+
+  const fx =
+    x > 0.008856 ? Math.pow(x / xn, 1 / 3) : 7.787 * (x / xn) + 16 / 116;
+  const fy =
+    y > 0.008856 ? Math.pow(y / yn, 1 / 3) : 7.787 * (y / yn) + 16 / 116;
+  const fz =
+    z > 0.008856 ? Math.pow(z / zn, 1 / 3) : 7.787 * (z / zn) + 16 / 116;
+
+  const l = 116 * fy - 16;
+  const a = 500 * (fx - fy);
+  const bValue = 200 * (fy - fz);
+
+  return { l, a, b: bValue };
 }
 
 // Group similar colors together
-function groupSimilarColors(colors) {
-  const PROXIMITY_THRESHOLD = 25; // Adjust this threshold as needed
+function groupSimilarColors(colors, threshold = 10) {
+  // Default threshold is more conservative with the improved distance calculation
+  // Using more perceptually accurate distance threshold
   const groups = [];
 
   colors.forEach((color) => {
@@ -157,10 +201,8 @@ function groupSimilarColors(colors) {
     let foundGroup = false;
 
     for (const group of groups) {
-      if (colorDistance(color, group.representative) < PROXIMITY_THRESHOLD) {
+      if (colorDistance(color, group.representative) < threshold) {
         group.colors.push(color);
-        // Re-calculate the representative (average) if needed
-        // For simplicity, we'll keep the first color as representative
         foundGroup = true;
         break;
       }
@@ -206,6 +248,8 @@ function sortColorsByHsl(colors) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractColors") {
-    sendResponse({ colors: extractColors() });
+    // Get the threshold from the request, default to 10 if not provided
+    const threshold = request.threshold || 10;
+    sendResponse({ colors: extractColors(threshold) });
   }
 });

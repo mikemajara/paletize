@@ -1,0 +1,37 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Paletize Chrome Extension Build Process
+
+## Overview
+Paletize uses Rollup for bundling and building the Chrome extension. The build process is defined in [rollup.config.js](mdc:rollup.config.js) and handles bundling JavaScript, processing CSS, and copying necessary assets to the `dist` directory.
+
+## Key Files
+- [package.json](mdc:package.json) - Contains the build scripts and dependencies
+- [rollup.config.js](mdc:rollup.config.js) - Rollup configuration with separate configurations for popup and content scripts
+- [popup.js](mdc:popup.js) - Main popup UI script
+- [content-script.js](mdc:content-script.js) - Script injected into web pages to extract colors
+
+## Build Commands
+From [package.json](mdc:package.json), there are two main build commands:
+- `npm run dev` - Development build with watch mode (automatically rebuilds on changes)
+- `npm run build` - Production build with minification
+
+## Build Process Steps
+1. Rollup processes JavaScript files ([popup.js](mdc:popup.js) and [content-script.js](mdc:content-script.js))
+2. CSS is extracted and processed
+3. HTML, CSS, and manifest files are copied to the `dist` directory
+4. Source maps are generated for development builds
+5. Code is minified for production builds
+
+## Distribution
+After building, the extension is ready for distribution from the `dist` directory:
+- Create a ZIP file from the `dist` directory contents for uploading to the Chrome Web Store
+- For local testing, load the unpacked extension from the `dist` directory in Chrome's developer mode
+
+## Best Practices
+- Always run `npm run build` before creating distribution packages
+- Don't modify files in the `dist` directory directly - they're overwritten on each build
+- When adding new assets, update [rollup.config.js](mdc:rollup.config.js) to include them in the build process

@@ -1,0 +1,49 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Paletize Color Extraction and Organization
+
+## Overview
+Paletize extracts colors from web pages and organizes them into a visually appealing palette. The extension handles different color formats, groups similar colors, and sorts them by color properties.
+
+## Key Components
+
+### Color Extraction
+[content-script.js](mdc:content-script.js) handles the extraction of colors from web pages:
+- Scans both CSS stylesheets and computed styles
+- Extracts HEX, RGB, RGBA, HSL, and HSLA color formats
+- Filters out transparent colors and duplicate values
+
+### Color Processing
+The extracted colors undergo several processing steps:
+1. Conversion to a common format for comparison ([colorToRgb](mdc:content-script.js))
+2. Grouping similar colors based on proximity thresholds ([groupSimilarColors](mdc:content-script.js))
+3. Sorting based on HSL values for a natural color order ([sortColorsByHsl](mdc:content-script.js))
+
+### Color Display
+[popup.js](mdc:popup.js) handles the display of colors in the popup UI:
+- Can display colors grouped by palette or as a single list
+- Converts between color formats (HEX, RGB, HSL)
+- Handles copying colors to clipboard
+
+## Color Proximity and Grouping
+The extension identifies similar colors using:
+- Euclidean distance in RGB space ([colorDistance](mdc:content-script.js))
+- HSL properties for sorting and organization
+- Configurable proximity threshold
+
+## Color Formats and Conversion
+Multiple conversion utilities are available:
+- RGB to HEX ([rgbToHex](mdc:popup.js))
+- Color to HSL ([colorToHsl](mdc:popup.js))
+- Color to RGB ([colorToRgb](mdc:popup.js))
+- Format-specific exporters for HEX, RGB, and HSL
+
+## User Interface
+The color display UI in [popup.html](mdc:popup.html) and [popup.css](mdc:popup.css) includes:
+- Toggleable grouped/ungrouped views
+- Format-specific export options
+- Color tiles with values displayed inside
+- Visual indication of color relationships
