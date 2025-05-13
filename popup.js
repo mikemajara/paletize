@@ -553,12 +553,40 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Handle swatch toggle switch changes
-  swatchToggle.addEventListener("change", () => {
-    showSwatches = swatchToggle.checked;
-    // Refresh display to show/hide swatches
-    updateColorDisplay();
-  });
+  // Handle swatch toggle switch changes - simplified approach
+  document
+    .querySelector(".swatch-toggle .switch")
+    .addEventListener("click", function (e) {
+      // Toggle the checkbox state
+      swatchToggle.checked = !swatchToggle.checked;
+
+      // Update our state
+      showSwatches = swatchToggle.checked;
+
+      // Update the UI
+      updateColorDisplay();
+
+      // Prevent default handling to avoid double toggling
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+  // Add a click handler to the label for better UX
+  document
+    .querySelector(".swatch-toggle label")
+    .addEventListener("click", function (e) {
+      // Toggle the checkbox state directly
+      swatchToggle.checked = !swatchToggle.checked;
+
+      // Update our state
+      showSwatches = swatchToggle.checked;
+
+      // Update the UI
+      updateColorDisplay();
+
+      // Prevent default to avoid double toggling
+      e.preventDefault();
+    });
 
   // Initialize the toggle state based on the default value
   swatchToggle.checked = showSwatches;
